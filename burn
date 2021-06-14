@@ -1,0 +1,3 @@
+#!/bin/bash
+
+../../6502/minipro/minipro/minipro -p AT28C256 -w a.out
