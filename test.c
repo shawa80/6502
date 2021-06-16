@@ -39,8 +39,8 @@ extern char ORA;
 void sys_irqEnable();
 
 extern int com_index;
-extern int com_size;
-extern char com_buf[];
+//extern int com_size;
+extern char* com_buf;
 
 void com_setStartFrame() {
 
@@ -75,22 +75,16 @@ void com_init() {
 //	t |= 0x14; //xxx1 10xx //set bits
 
 	ACR = t;
+}
 
+void com_fillColor() {
 	com_index = 0;
-	com_size = 2048;
+	com_buf = (char *)1600;
 
 	com_setStartFrame();
 	com_setStartFrame();
 
-	com_index = 8;
-	for (int l = 0; l < 20; l++) {
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0xff, 0x00, 0x00);
-	}
-	for (int l = 0; l < 20; l++) {
+	for (int l = 0; l < 40; l++) {
 		com_setColor(0x00, 0x00, 0xff);
 		com_setColor(0x00, 0x00, 0xff);
 		com_setColor(0x00, 0x00, 0xff);
@@ -99,20 +93,25 @@ void com_init() {
 	}
 
 	com_setStartFrame();
-	com_size = com_index;
+	com_setStartFrame();
+//	com_size = com_index;
 }
 
 void com_b() {
 
+	int test = 0;
 	SR = com_buf[com_index];
 	com_index++;
+	test++;
 	SR = com_buf[com_index];
 	com_index++;
+	test++;
 	SR = com_buf[com_index];
 	com_index++;
+	test ++;
 	SR = com_buf[com_index];
 	com_index++;
-
+	test++;
 
 }
 
@@ -120,7 +119,7 @@ void com_burst() {
 
 	com_index = 0;
 
-	for (int i = 0; i < com_size; i++)	{
+	for (int i = 0; i < 204; i++)	{
 		com_b();
 	}
 
@@ -143,7 +142,7 @@ inline void com_disableIrq() {
 	IER = (VIA_SHIFT); //0x04;
 }
 
-inline void com_procIrq() {
+/*inline void com_procIrq() {
 
 
 	if (com_index < com_size)
@@ -154,11 +153,11 @@ inline void com_procIrq() {
 	else {
 		com_disableIrq();
 	}
-}
+}*/
 
-void com_start() {
+/*void com_start() {
 	com_procIrq();
-}
+}*/
 
 
 void dis_wait() {
@@ -283,8 +282,12 @@ void mem_set(short addr[], int size, char value) {
 int mem_scanMem(char * startAddress) {
 	int i = 0;
 	while (1) {
-		startAddress[i] = (char)0xA5; //set value here
-		if (startAddress[i] != (char)0xA5) {
+		startAddress[i] = (char)0x00; //set value here
+		if (startAddress[i] != (char)0x00) {
+			break;
+		}
+		startAddress[i] = (char)0xFF; //set value here
+		if (startAddress[i] != (char)0xFF) {
 			break;
 		}
 		i++;
@@ -389,9 +392,9 @@ inline void irqHandler() {
 		timer1_clearIrq();
 		clk_tick();
 	}
-	if (via & VIA_SHIFT) {
-		com_procIrq();
-	}
+	//if (via & VIA_SHIFT) {
+	//	com_procIrq();
+	//}
 
 }
 
@@ -420,6 +423,7 @@ void start() {
 	//sys_irqEnable();
 
 	//com_start();
+	com_fillColor();
 	com_burst();
 	while (1){}
 }
