@@ -113,10 +113,10 @@ _clk_min = $35
 _clk_sec = $36
 _clk_jiff = $37 
 
-_com_index = $38
-_com_size = $39
-_com_buf = $40
-_com_buf_end = $A4
+_com_index = $38	;two bytes
+_com_size = $0601	;two bytes
+_com_buf = $0603
+_com_buf_end = $0E03
 
 
   .org $8000

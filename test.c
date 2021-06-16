@@ -38,66 +38,94 @@ extern char ORA;
 
 void sys_irqEnable();
 
-extern char com_index;
-extern char com_size;
+extern int com_index;
+extern int com_size;
 extern char com_buf[];
+
+void com_setStartFrame() {
+
+	//start frame
+	com_buf[com_index] = 0x00;  //end frame?
+	com_index++;
+	com_buf[com_index] = 0x00;
+	com_index++;
+	com_buf[com_index] = 0x00;
+	com_index++;
+	com_buf[com_index] = 0x00;
+	com_index++;
+
+}
+
+void com_setColor(char r, char g, char b) {
+	com_buf[com_index] = 0xE1; //global
+	com_index++;
+	com_buf[com_index] = b; //b
+	com_index++;
+	com_buf[com_index] = g; //g
+	com_index++;
+	com_buf[com_index] = r; //r
+	com_index++;
+}
 
 void com_init() {
 
 	char t = ACR;
 	t &= 0xE3;	  //111x xx11 clear bits
-//	t |= 0x18; //xxx1 10xx //set bits
-	t |= 0x14; //xxx1 10xx //set bits
+	t |= 0x18; //xxx1 10xx //set bits
+//	t |= 0x14; //xxx1 10xx //set bits
 
 	ACR = t;
 
 	com_index = 0;
-	com_size = 28;
-	
-	//start frame
-	com_buf[0] = 0x00;  //end frame?
-	com_buf[1] = 0x00;
-	com_buf[2] = 0x00;
-	com_buf[3] = 0x00;
+	com_size = 2048;
 
-	//start frame
-	com_buf[4] = 0x00;
-	com_buf[5] = 0x00;
-	com_buf[6] = 0x00;
-	com_buf[7] = 0x00;
+	com_setStartFrame();
+	com_setStartFrame();
 
+	com_index = 8;
+	for (int l = 0; l < 20; l++) {
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0xff, 0x00, 0x00);
+	}
+	for (int l = 0; l < 20; l++) {
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0xff, 0x00, 0x00);
+	}
 
-		//blue
-		com_buf[8] = 0xE1; //global
-		com_buf[9] = 0xFF; //b
-		com_buf[10] = 0x00; //g
-		com_buf[11] = 0x00; //r
+	com_setStartFrame();
+	com_size = com_index;
+}
 
-		//red
-		com_buf[12] = 0xE4; //global
-		com_buf[13] = 0x00; //b
-		com_buf[14] = 0x00; //g
-		com_buf[15] = 0xFF; //r
+void com_b() {
 
-		//green
-		com_buf[16] = 0xE4; //global
-		com_buf[17] = 0x00; //b
-		com_buf[18] = 0xFF; //g
-		com_buf[19] = 0x00; //r
+	SR = com_buf[com_index];
+	com_index++;
+	SR = com_buf[com_index];
+	com_index++;
+	SR = com_buf[com_index];
+	com_index++;
+	SR = com_buf[com_index];
+	com_index++;
 
-		//green
-		com_buf[20] = 0xFF; //global
-		com_buf[21] = 0xFF; //b
-		com_buf[22] = 0xFF; //g
-		com_buf[23] = 0xFF; //r
-
-		//green
-		com_buf[24] = 0xFF; //global
-		com_buf[25] = 0xFF; //b
-		com_buf[26] = 0xFF; //g
-		com_buf[27] = 0xff; //r
 
 }
+
+void com_burst() {
+
+	com_index = 0;
+
+	for (int i = 0; i < com_size; i++)	{
+		com_b();
+	}
+
+}
+
 
 inline void com_write(char d) {
 
@@ -274,8 +302,8 @@ void timer1_init() {
 	timer1_T1L_H = 0x27;
 
 //ex
-	timer1_T2C_L = 0x10;
-	timer1_T2C_H = 0x27;
+//	timer1_T2C_L = 0x10;
+//	timer1_T2C_H = 0x27;
 
 
 	ACR = 0x40;
@@ -376,7 +404,7 @@ void start() {
 	timer1_init();
 
 	com_init();
-	com_enableIrq();
+	//com_enableIrq();
 
 	dis_clear();
 	dis_home();
@@ -389,10 +417,10 @@ void start() {
 
 	timer1_start();
 
-	sys_irqEnable();
+	//sys_irqEnable();
 
-	com_start();
-
+	//com_start();
+	com_burst();
 	while (1){}
 }
 
