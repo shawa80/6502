@@ -18,45 +18,6 @@ _IER = $600E
 _ORA = $600F
 
 
-PORTB = $6000
-PORTA = $6001
-DDRB = $6002
-DDRA = $6003
-T1C_L = $6004
-T1C_H = $6005
-T1L_L = $6006
-T1L_H = $6007
-T2C_L = $6008
-T2C_H = $6009
-SR = $600A
-ACR = $600B
-PCR = $600C
-IFR = $600D
-IER = $600E
-ORA = $600F
-
-; A, X, Z are not preserved on calls
-
-REG_B  = $02  ; general purpose regs
-REG_BL = $02
-REG_BH = $03
-
-REG_C  = $04
-REG_CL = $04
-REG_CH = $05
-
-REG_D  = $06
-REG_DL = $06
-REG_DH = $07
-
-REG_E  = $08
-REG_EL = $08
-REG_EH = $09
-
-REG_R  = $0A  ; reg for return values
-REG_RL = $0A
-REG_RH = $0B
-
 r0  = $00
 r1  = $01
 r2  = $02
@@ -99,24 +60,25 @@ sp  = $30
 sp0 = $30
 sp1 = $31
 
-;$0032 - $00ff   ; open zero page
-;$0100 - $01ff ; hardware stack
-
-cStackL = $0200
-cStackH = $0600
-
-_vtest = $33
-
 
 _clk_hr = $34
 _clk_min = $35
 _clk_sec = $36
 _clk_jiff = $37 
 
+;todo this is hex, act like it
 _com_index = $39	;two bytes
 _com_size = $41		;two bytes
-_com_buf = $43
-_com_buf_end = $45
+
+;$0032 - $00ff   ; open zero page
+;$0100 - $01ff ; hardware stack
+
+cStackL = $0200
+cStackH = $0600
+
+_com_buf = $0602
+_com_buf_start = $0602
+_com_buf_end   = $0E02 ;2k of space
 
 
   .org $8000
@@ -136,8 +98,6 @@ main:
 
   jsr _start
 
-
-
 loop:
   jmp loop
 
@@ -145,16 +105,11 @@ _sys_irqEnable:
   cli
   rts
 
-
   .include test.asm
 
 
 nmi:
 irq:
-;  pha
-;  bit T1C_L
-;  jsr _clk_tick
-;  pla
   jsr _irqHandler
   rti
 

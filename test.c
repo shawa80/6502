@@ -1,5 +1,4 @@
 
-extern char vtest;
 
 extern char dis_portA;
 extern char dis_portB;
@@ -40,7 +39,7 @@ void sys_irqEnable();
 
 extern int com_index;
 extern int com_size;
-extern char* com_buf;
+extern char com_buf[];
 
 void com_setStartFrame() {
 
@@ -79,7 +78,6 @@ void com_init() {
 
 void com_fillColor() {
 	com_index = 0;
-	com_buf = (char *)1600;
 
 	com_setStartFrame();
 	com_setStartFrame();
@@ -400,13 +398,11 @@ inline void irqHandler() {
 
 void start() {
 
-	vtest = 1;
 	clk_init();
 	dis_printInit();
 	timer1_init();
 
 	com_init();
-	//com_enableIrq();
 
 	dis_clear();
 	dis_home();
@@ -421,7 +417,6 @@ void start() {
 
 	//sys_irqEnable();
 
-	//com_start();
 	com_fillColor();
 	com_burst();
 	while (1){}
