@@ -39,7 +39,7 @@ extern char ORA;
 void sys_irqEnable();
 
 extern int com_index;
-//extern int com_size;
+extern int com_size;
 extern char* com_buf;
 
 void com_setStartFrame() {
@@ -59,11 +59,11 @@ void com_setStartFrame() {
 void com_setColor(char r, char g, char b) {
 	com_buf[com_index] = 0xE1; //global
 	com_index++;
-	com_buf[com_index] = b; //b
+	com_buf[com_index] = b;
 	com_index++;
-	com_buf[com_index] = g; //g
+	com_buf[com_index] = g;
 	com_index++;
-	com_buf[com_index] = r; //r
+	com_buf[com_index] = r;
 	com_index++;
 }
 
@@ -85,33 +85,32 @@ void com_fillColor() {
 	com_setStartFrame();
 
 	for (int l = 0; l < 40; l++) {
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
-		com_setColor(0x00, 0x00, 0xff);
 		com_setColor(0xff, 0x00, 0x00);
+		com_setColor(0x00, 0xff, 0x00);
+		com_setColor(0x00, 0x00, 0xff);
+		com_setColor(0xff, 0xff, 0xff);
+		com_setColor(0xff, 0xff, 0xff);
 	}
 
 	com_setStartFrame();
 	com_setStartFrame();
-//	com_size = com_index;
+	com_setStartFrame();
+	com_setStartFrame();
+	com_setStartFrame();
+	com_setStartFrame();
+	com_size = com_index;
 }
 
 void com_b() {
 
-	int test = 0;
 	SR = com_buf[com_index];
 	com_index++;
-	test++;
 	SR = com_buf[com_index];
 	com_index++;
-	test++;
 	SR = com_buf[com_index];
 	com_index++;
-	test ++;
 	SR = com_buf[com_index];
 	com_index++;
-	test++;
 
 }
 
@@ -119,7 +118,7 @@ void com_burst() {
 
 	com_index = 0;
 
-	for (int i = 0; i < 204; i++)	{
+	while (com_index < com_size) {
 		com_b();
 	}
 
