@@ -37,14 +37,29 @@ extern char ORA;
 
 void sys_irqEnable();
 
+
+/********************************************
+Serial port IO AKA led control
+********************************************/
+
 extern int com_index;
 extern int com_size;
 extern char com_buf[];
 
+
+void com_init() {
+
+	char t = ACR;
+	t &= 0xE3;	//111x xx11 //clear bits
+	t |= 0x18; 	//xxx1 10xx //output using main clock
+
+	ACR = t;
+}
+
 void com_setStartFrame() {
 
-	//start frame
-	com_buf[com_index] = 0x00;  //end frame?
+	//start frame, we only need clock pulse, data should be zero
+	com_buf[com_index] = 0x00;
 	com_index++;
 	com_buf[com_index] = 0x00;
 	com_index++;
@@ -55,8 +70,13 @@ void com_setStartFrame() {
 
 }
 
+void com_setEndFrame() {
+	//Calculate how many end frames we need
+	com_setStartFrame();
+}
+
 void com_setColor(char r, char g, char b) {
-	com_buf[com_index] = 0xE1; //global
+	com_buf[com_index] = 0xE1; //111x xxxx, brightness
 	com_index++;
 	com_buf[com_index] = b;
 	com_index++;
@@ -66,17 +86,9 @@ void com_setColor(char r, char g, char b) {
 	com_index++;
 }
 
-void com_init() {
-
-	char t = ACR;
-	t &= 0xE3;	  //111x xx11 clear bits
-	t |= 0x18; //xxx1 10xx //set bits
-//	t |= 0x14; //xxx1 10xx //set bits
-
-	ACR = t;
-}
 
 void com_fillColor() {
+
 	com_index = 0;
 
 	com_setStartFrame();
@@ -90,16 +102,17 @@ void com_fillColor() {
 		com_setColor(0xff, 0xff, 0xff);
 	}
 
-	com_setStartFrame();
-	com_setStartFrame();
-	com_setStartFrame();
-	com_setStartFrame();
-	com_setStartFrame();
-	com_setStartFrame();
+	//clean up, calculate how many we need
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
 	com_size = com_index;
 }
 
-void com_b() {
+inline void com_b() {
 
 	SR = com_buf[com_index];
 	com_index++;
@@ -123,7 +136,10 @@ void com_burst() {
 }
 
 
-inline void com_write(char d) {
+/****************************************
+  Serial irq handling
+*****************************************/
+/*inline void com_write(char d) {
 
 	SR = d;
 }
@@ -139,7 +155,7 @@ inline void com_disableIrq() {
 	IER = (VIA_SHIFT); //0x04;
 }
 
-/*inline void com_procIrq() {
+inline void com_procIrq() {
 
 
 	if (com_index < com_size)
@@ -150,12 +166,37 @@ inline void com_disableIrq() {
 	else {
 		com_disableIrq();
 	}
-}*/
+}
 
-/*void com_start() {
+void com_start() {
 	com_procIrq();
 }*/
 
+/*****************************************
+LibMath
+*****************************************/
+
+int math_div(int num, int deno) {
+
+	int times = 0;
+	while (num >= deno) {
+		num = num - deno;
+		times++;
+	}
+	return times;
+}
+
+int math_mod(int num, int deno) {
+
+	while (num >= deno) {
+		num = num - deno;
+	}
+	return num;
+}
+
+/**************************************************
+two line lcd display
+***************************************************/
 
 void dis_wait() {
 	dis_DDRB = 0x00;
@@ -165,7 +206,7 @@ void dis_wait() {
 		if ((dis_portB & 0x80) != 0x80) break;
 	}
 	dis_portA = dis_RW;
-	dis_DDRB = 0xff; 
+	dis_DDRB = 0xff;
 }
 
 void dis_writePortA(char val) {
@@ -203,24 +244,6 @@ void dis_printChar(char c) {
 	dis_portA = dis_RS;
 }
 
-
-int math_div(int num, int deno) {
-
-	int times = 0;
-	while (num >= deno) {
-		num = num - deno;
-		times++;
-	}
-	return times;
-}
-
-int math_mod(int num, int deno) {
-
-	while (num >= deno) {
-		num = num - deno;
-	}
-	return num;
-}
 
 char dis_int2Ascii(int value) {
 	return 0x30 + value;
@@ -261,6 +284,10 @@ void dis_print(char * c) {
 	}
 }
 
+/*************************************************
+LibMem
+*************************************************/
+
 void mem_cpy(char dest[], char src[], int size) {
 
 	for (int i = 0; i < size; i++) {
@@ -292,6 +319,11 @@ int mem_scanMem(char * startAddress) {
 	return i+(int)startAddress;
 }
 
+/**********************************
+Timer
+***********************************/
+
+
 
 void timer1_init() {
 
@@ -318,6 +350,10 @@ void timer1_clearIrq() {
 	tmp = timer1_T1C_L;
 }
 
+
+/******************************
+Clock
+******************************/
 extern char clk_jiff;
 extern char clk_sec;
 extern char clk_min;
@@ -329,6 +365,7 @@ void clk_init() {
 	clk_min = 0;
 	clk_hr = 1;
 }
+
 
 void clk_print() {
 
@@ -374,12 +411,13 @@ void clk_tick() {
 
 	if (print == 1) {
 		clk_print();
-		//com_write(0xA5);
 	}
 }
 
 
-
+/*****************************
+irq
+*****************************/
 
 inline void irqHandler() {
 
@@ -415,7 +453,7 @@ void start() {
 
 	timer1_start();
 
-	//sys_irqEnable();
+	sys_irqEnable();
 
 	com_fillColor();
 	com_burst();
