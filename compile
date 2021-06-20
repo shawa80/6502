@@ -5,4 +5,6 @@ grep -v 'section.text' test.asm > test.tmp
 cat test.tmp > test.asm
 grep -v 'section.rodata' test.asm > test.tmp
 cat test.tmp > test.asm
+#grep -v 'section.bss' test.asm > test.tmp
+#cat test.tmp > test.asm
 ../../6502/vbcc/bin/vasm6502_oldstyle -Fbin -dotdir hello-world.s 

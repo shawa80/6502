@@ -78,7 +78,11 @@ cStackH = $0600
 
 _com_buf = $0602
 _com_buf_start = $0602
+_com_buf_px    = $060A
 _com_buf_end   = $0E02 ;2k of space
+
+_t_px = $0E03  ;400 bytes for 200 char pointers
+_t_px_end = $0F93
 
 
   .org $8000

@@ -45,7 +45,7 @@ Serial port IO AKA led control
 extern int com_index;
 extern int com_size;
 extern char com_buf[];
-
+extern char com_buf_px[];
 
 void com_init() {
 
@@ -100,6 +100,31 @@ void com_fillColor() {
 		com_setColor(0x00, 0x00, 0xff);
 		com_setColor(0xff, 0xff, 0xff);
 		com_setColor(0xff, 0xff, 0xff);
+	}
+
+	//clean up, calculate how many we need
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_setEndFrame();
+	com_size = com_index;
+}
+
+void com_fillGreen() {
+
+	com_index = 0;
+
+	com_setStartFrame();
+	com_setStartFrame();
+
+	for (int l = 0; l < 40; l++) {
+		com_setColor(0x00, 0xFF, 0x00);
+		com_setColor(0x00, 0xff, 0x00);
+		com_setColor(0x00, 0xFF, 0x00);
+		com_setColor(0x00, 0xff, 0x00);
+		com_setColor(0x00, 0xff, 0x00);
 	}
 
 	//clean up, calculate how many we need
@@ -194,6 +219,14 @@ int math_mod(int num, int deno) {
 	return num;
 }
 
+//so much wrong here
+int __mulint16(int a, int b) {
+	int r = 0;
+	for (int i = 0; i < a; i++)
+		r += b;
+	return r;
+}
+
 /**************************************************
 two line lcd display
 ***************************************************/
@@ -251,6 +284,11 @@ char dis_int2Ascii(int value) {
 
 void dis_printDec(int value) {
 
+	if (value < 0) {
+		dis_printChar('!');
+		return;
+	}
+
 	if (value < 10) {
 		dis_printChar(dis_int2Ascii(value));
 		return;
@@ -306,6 +344,7 @@ void mem_set(short addr[], int size, char value) {
 int mem_scanMem(char * startAddress) {
 	int i = 0;
 	while (1) {
+		char orig = startAddress[i];
 		startAddress[i] = (char)0x00; //set value here
 		if (startAddress[i] != (char)0x00) {
 			break;
@@ -314,6 +353,7 @@ int mem_scanMem(char * startAddress) {
 		if (startAddress[i] != (char)0xFF) {
 			break;
 		}
+		startAddress[i] = orig;
 		i++;
 	}
 	return i+(int)startAddress;
@@ -393,6 +433,8 @@ void clk_tick() {
 		clk_jiff = 0;
 		clk_sec++;
 		print = 1;
+		//com_burst();
+		//com_fillGreen();
 	}
 	if (clk_sec >= 60)
 	{
@@ -410,9 +452,149 @@ void clk_tick() {
 	}
 
 	if (print == 1) {
-		clk_print();
+		//clk_print();
 	}
 }
+
+
+/****************************
+tetris
+****************************/
+
+/***************************
+20 40
+19 39
+18 38
+.  .
+3  23
+2  22
+1  21
+***************************/
+
+#define t_w 20
+#define t_h 10
+
+
+extern char* t_px[10][20];
+
+
+void t_setLum(int x, int y, char brighness) {
+
+	(*t_px[x][y]) = brighness;
+}
+
+void t_setPx(int x, int y, char r, char g, char b) {
+
+	char* loc = t_px[x][y];
+	loc++;
+	(*loc) = b;
+	loc++;
+	(*loc) = g;
+	loc++;
+	(*loc) = r;
+
+}
+void t_setPxByMem(char * loc, char r, char g, char b) {
+
+	loc++;
+	(*loc) = b;
+
+	loc++;
+	(*loc) = g;
+
+	loc++;
+	(*loc) = r;
+}
+
+
+void t_init() {
+
+	int o = 0;
+	int y;
+
+	y = 0;
+	while(y < 20) {
+		t_px[0][y] = &com_buf_px[o];
+		y++;
+		o+=4;
+	}
+	y = 19;
+	while(y >= 0) {
+		t_px[1][y] = &com_buf_px[o];
+		y--;
+		o+=4;
+	}
+	y = 0;
+	while(y < 20) {
+		t_px[2][y] = &com_buf_px[o];
+		y++;
+		o+=4;
+	}
+	y = 19;
+	while(y >= 0) {
+		t_px[3][y] = &com_buf_px[o];
+		y--;
+		o+=4;
+	}
+	y = 0;
+	while(y < 20) {
+		t_px[4][y] = &com_buf_px[o];
+		y++;
+		o+=4;
+	}
+	y = 19;
+	while(y >= 0) {
+		t_px[5][y] = &com_buf_px[o];
+		y--;
+		o+=4;
+	}
+	y = 0;
+	while(y < 20) {
+		t_px[6][y] = &com_buf_px[o];
+		y++;
+		o+=4;
+	}
+	y = 19;
+	while(y >= 0) {
+		t_px[7][y] = &com_buf_px[o];
+		y--;
+		o+=4;
+	}
+	y = 0;
+	while(y < 20) {
+		t_px[8][y] = &com_buf_px[o];
+		y++;
+		o+=4;
+	}
+	y = 19;
+	while(y >= 0) {
+		t_px[9][y] = &com_buf_px[o];
+		y--;
+		o+=4;
+	}
+
+}
+
+void t_clear() {
+
+	char * offset = com_buf_px;
+	for (int i = 0; i < 200; i++) {
+
+		t_setPxByMem(offset, 0x00, 0x00, 0x00);
+		offset += 4;
+	}
+
+}
+
+void t_start() {
+
+	t_clear();
+	t_setPx(0, 0, 0x00, 0x00, 0xFF);
+	t_setPx(9, 0, 0x00, 0x00, 0xFF);
+	t_setPx(9, 19, 0x00, 0x00, 0xFF);
+	t_setPx(0, 19, 0x00, 0x00, 0xFF);
+}
+
 
 
 /*****************************
@@ -442,21 +624,30 @@ void start() {
 
 	com_init();
 
+	t_init();
+
 	dis_clear();
 	dis_home();
 	dis_print("Hello From C");
 
 	dis_setLine2();
-	dis_print("Memory: ");
-	int memSize = mem_scanMem((char*)2048);
-	dis_printDec(memSize);
+	//int memSize = mem_scanMem((char*)2048);
+	//dis_printDec(memSize);
+	
+
+	//dis_print("Memory: ");
 
 	timer1_start();
 
-	sys_irqEnable();
+	//sys_irqEnable();
 
 	com_fillColor();
 	com_burst();
+
+	t_start();
+	com_burst();
+
+
 	while (1){}
 }
 
