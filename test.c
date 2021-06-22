@@ -36,7 +36,7 @@ extern char ORA;
 
 
 void sys_irqEnable();
-
+void sys_irqDisable();
 
 /********************************************
 Serial port IO AKA led control
@@ -152,12 +152,15 @@ inline void com_b() {
 
 void com_burst() {
 
+	//sys_irqDisable();
+
 	com_index = 0;
 
 	while (com_index < com_size) {
 		com_b();
 	}
 
+	//sys_irqEnable();
 }
 
 
@@ -385,7 +388,7 @@ void timer1_start() {
 	IER = 0xC0;
 }
 
-void timer1_clearIrq() {
+inline void timer1_clearIrq() {
 	char tmp;
 	tmp = timer1_T1C_L;
 }
@@ -433,9 +436,9 @@ void clk_tick() {
 		clk_jiff = 0;
 		clk_sec++;
 		print = 1;
-		//com_burst();
+		com_burst();
 		//com_fillGreen();
-	}
+	}/*
 	if (clk_sec >= 60)
 	{
 		clk_sec = 0;
@@ -453,7 +456,7 @@ void clk_tick() {
 
 	if (print == 1) {
 		//clk_print();
-	}
+	}*/
 }
 
 
@@ -474,9 +477,20 @@ tetris
 #define t_w 20
 #define t_h 10
 
+typedef struct loc {
+	char x;
+	char y;
+} Location;
+
+typedef struct shp {
+	Location a;
+	Location b;
+	Location c;
+	Location d;
+} Shape;
+
 
 extern char* t_px[10][20];
-
 
 void t_setLum(int x, int y, char brighness) {
 
@@ -606,8 +620,8 @@ inline void irqHandler() {
 	char via = IFR;
 
 	if (via & VIA_TIMER1) {
-		timer1_clearIrq();
 		clk_tick();
+		timer1_clearIrq();
 	}
 	//if (via & VIA_SHIFT) {
 	//	com_procIrq();
@@ -615,6 +629,54 @@ inline void irqHandler() {
 
 }
 
+
+void t_setShape(Shape * block) {
+	t_setPx(block->a.x, block->a.y, 0xFF, 0x00, 0x00);
+	t_setPx(block->b.x, block->b.y, 0xFF, 0x00, 0x00);
+	t_setPx(block->c.x, block->c.y, 0xFF, 0x00, 0x00);
+	t_setPx(block->d.x, block->d.y, 0xFF, 0x00, 0x00);
+}
+void t_clearShape(Shape * block) {
+	t_setPx(block->a.x, block->a.y, 0x00, 0x00, 0x00);
+	t_setPx(block->b.x, block->b.y, 0x00, 0x00, 0x00);
+	t_setPx(block->c.x, block->c.y, 0x00, 0x00, 0x00);
+	t_setPx(block->d.x, block->d.y, 0x00, 0x00, 0x00);
+}
+
+void t_moveDown(Shape * block) {
+	if (block->a.y > 0)
+		block->a.y--;
+	if (block->b.y > 0)
+		block->b.y--;
+	if (block->c.y > 0)
+		block->c.y--;
+	if (block->d.y > 0)
+		block->d.y--;
+}
+
+
+void blockLogic(Shape * block) {
+	t_clearShape(block);
+	t_moveDown(block);
+	t_setShape(block);
+
+}
+
+void test(Shape * block) {
+
+
+		if (clk_jiff >= 10) {
+			//t_setPx(9, 0, 0xFF, 0x00, 0x00);
+			blockLogic(block);
+			clk_jiff = 0;
+		}
+		//if (clk_jiff == 0) {
+		//	t_setPx(9, 0, 0x00, 0xFF, 0x00);
+		//}
+
+		com_burst();
+
+}
 
 void start() {
 
@@ -633,13 +695,12 @@ void start() {
 	dis_setLine2();
 	//int memSize = mem_scanMem((char*)2048);
 	//dis_printDec(memSize);
-	
 
 	//dis_print("Memory: ");
 
 	timer1_start();
 
-	//sys_irqEnable();
+	sys_irqEnable();
 
 	com_fillColor();
 	com_burst();
@@ -647,8 +708,22 @@ void start() {
 	t_start();
 	com_burst();
 
+	clk_sec = 0;
 
-	while (1){}
+	Shape block;
+	block.a.x = 4;
+	block.a.y = 19;
+	block.b.x = 4;
+	block.b.y = 18;
+	block.c.x = 4;
+	block.c.y = 17;
+	block.d.x = 5;
+	block.d.y = 17;
+
+
+	while (1) {
+		test(&block);
+	}
 }
 
 

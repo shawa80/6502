@@ -109,15 +109,23 @@ _sys_irqEnable:
   cli
   rts
 
+_sys_irqDisable:
+  sei
+  rts
+
   .include test.asm
 
 
 nmi:
 irq:
-  jsr _irqHandler
+  ;jsr _irqHandler
+  bit _timer1_T1C_L
+  inc _clk_jiff
+
   rti
 
   .org $fffa
   .word nmi
   .word reset
   .word irq
+
