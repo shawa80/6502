@@ -492,7 +492,16 @@ typedef struct loc {
 	char y;
 } Location;
 
+typedef struct clr {
+	char r;
+	char g;
+	char b;
+} Color;
+
 typedef struct shp {
+
+	Color color;
+
 	Location a;
 	Location b;
 	Location c;
@@ -500,6 +509,8 @@ typedef struct shp {
 } Shape;
 
 typedef struct brd {
+	int nextColor;
+	int nextShape;
 	char grid[10][20];
 } Board;
 
@@ -646,10 +657,10 @@ inline void irqHandler() {
 
 
 void t_setShape(Shape * block) {
-	t_setPx(block->a.x, block->a.y, 0xFF, 0x00, 0x00);
-	t_setPx(block->b.x, block->b.y, 0xFF, 0x00, 0x00);
-	t_setPx(block->c.x, block->c.y, 0xFF, 0x00, 0x00);
-	t_setPx(block->d.x, block->d.y, 0xFF, 0x00, 0x00);
+	t_setPx(block->a.x, block->a.y, block->color.r, block->color.g, block->color.b);
+	t_setPx(block->b.x, block->b.y, block->color.r, block->color.g, block->color.b);
+	t_setPx(block->c.x, block->c.y, block->color.r, block->color.g, block->color.b);
+	t_setPx(block->d.x, block->d.y, block->color.r, block->color.g, block->color.b);
 }
 void t_clearShape(Shape * block) {
 	t_setPx(block->a.x, block->a.y, 0x00, 0x00, 0x00);
@@ -659,18 +670,31 @@ void t_clearShape(Shape * block) {
 }
 
 void t_moveDown(Shape * block) {
-	//if (block->a.y > 0)
-		block->a.y--;
-	//if (block->b.y > 0)
-		block->b.y--;
-	//if (block->c.y > 0)
-		block->c.y--;
-	//if (block->d.y > 0)
-		block->d.y--;
+	block->a.y--;
+	block->b.y--;
+	block->c.y--;
+	block->d.y--;
+}
+void t_moveLeft(Shape * block) {
+	block->a.x--;
+	block->b.x--;
+	block->c.x--;
+	block->d.x--;
+}
+void t_moveRight(Shape * block) {
+	block->a.x++;
+	block->b.x++;
+	block->c.x++;
+	block->d.x++;
 }
 
 
 void t_copyBlock(Shape * dest, Shape * src) {
+
+	dest->color.r = src->color.r;
+	dest->color.g = src->color.g;
+	dest->color.b = src->color.b;
+
 	dest->a.x = src->a.x;
 	dest->a.y = src->a.y;
 
@@ -685,7 +709,29 @@ void t_copyBlock(Shape * dest, Shape * src) {
 
 }
 
-int t_isCollided(Board * board, Shape * block) {
+int t_isWallHit(Shape * block) {
+	if (block->a.x < 0)
+		return TRUE;
+	if (block->b.x < 0)
+		return TRUE;
+	if (block->c.x < 0)
+		return TRUE;
+	if (block->d.x < 0)
+		return TRUE;
+
+	if (block->a.x > 9)
+		return TRUE;
+	if (block->b.x > 9)
+		return TRUE;
+	if (block->c.x > 9)
+		return TRUE;
+	if (block->d.x > 9)
+		return TRUE;
+
+	return FALSE;
+}
+
+int t_isFloorHit(Shape * block) {
 	if (block->a.y < 0)
 		return TRUE;
 	if (block->b.y < 0)
@@ -694,6 +740,11 @@ int t_isCollided(Board * board, Shape * block) {
 		return TRUE;
 	if (block->d.y < 0)
 		return TRUE;
+
+	return FALSE;
+}
+
+int t_isCollided(Board * board, Shape * block) {
 
 	if (board->grid[block->a.x][block->a.y] == 1)
 		return TRUE;
@@ -714,17 +765,39 @@ void t_stamp(Board * board, Shape * block) {
 	board->grid[block->d.x][block->d.y] = 1;
 }
 
+#define t_leftBtn 0x01
+#define t_centerBtn 0x02
+#define t_rightBtn 0x04
+
 
 Action blockLogic(Board * board, Shape * block) {
 
 	Shape bak;
 	t_copyBlock(&bak, block);
 
+
 	t_clearShape(block);
+
+	if (~dis_portA & t_leftBtn) {
+		t_moveLeft(block);
+	}
+	if (~dis_portA & t_rightBtn) {
+		t_moveRight(block);
+	}
+
+	if (t_isWallHit(block)
+	|| t_isCollided(board, block)) {
+		t_copyBlock(block, &bak);	//rollback move
+	} else {
+		t_copyBlock(&bak, block);	//commit to new rollback location
+	}
+
 	t_moveDown(block);
 
 	Action act = Drop;
-	if (t_isCollided(board, block)) {
+
+	if (t_isFloorHit(block)
+	|| t_isCollided(board, block)) {
 		t_copyBlock(block, &bak);
 		t_stamp(board, block);
 		act = NewBlock;
@@ -737,6 +810,9 @@ Action blockLogic(Board * board, Shape * block) {
 }
 
 void t_clearBoard(Board * board) {
+
+	board->nextColor = 0;
+	board->nextShape = 0;
 
 	for (int y = 0; y < 20; y++)
 		board->grid[0][y] = 0;
@@ -760,8 +836,7 @@ void t_clearBoard(Board * board) {
 		board->grid[9][y] = 0;
 }
 
-
-void t_makeBlock(Shape * block) {
+void t_makeBlockL(Shape * block) {
 	block->a.x = 4;
 	block->a.y = 19;
 	block->b.x = 4;
@@ -770,6 +845,98 @@ void t_makeBlock(Shape * block) {
 	block->c.y = 17;
 	block->d.x = 5;
 	block->d.y = 17;
+}
+void t_makeBlockT(Shape * block) {
+	block->a.x = 4;
+	block->a.y = 19;
+	block->b.x = 4;
+	block->b.y = 18;
+	block->c.x = 4;
+	block->c.y = 17;
+	block->d.x = 5;
+	block->d.y = 18;
+
+}
+void t_makeBlockI(Shape * block) {
+	block->a.x = 4;
+	block->a.y = 19;
+	block->b.x = 4;
+	block->b.y = 18;
+	block->c.x = 4;
+	block->c.y = 17;
+	block->d.x = 4;
+	block->d.y = 16;
+}
+void t_makeBlockZ(Shape * block) {
+	block->a.x = 4;
+	block->a.y = 19;
+	block->b.x = 5;
+	block->b.y = 19;
+	block->c.x = 5;
+	block->c.y = 18;
+	block->d.x = 6;
+	block->d.y = 18;
+
+}
+void t_makeBlockZZ(Shape * block) {
+	block->a.x = 5;
+	block->a.y = 19;
+	block->b.x = 4;
+	block->b.y = 19;
+	block->c.x = 4;
+	block->c.y = 18;
+	block->d.x = 3;
+	block->d.y = 18;
+}
+
+
+void t_makeBlock(Board * board, Shape * block) {
+
+
+	if (board->nextColor == 0) {
+		block->color.r = 0x00;
+		block->color.g = 0x00;
+		block->color.b = 0xFF;
+	} else if (board->nextColor == 1) {
+		block->color.r = 0xFF;
+		block->color.g = 0x00;
+		block->color.b = 0x00;
+	} else if (board->nextColor == 2) {
+		block->color.r = 0x00;
+		block->color.g = 0xFF;
+		block->color.b = 0x00;
+	} else if (board->nextColor == 3) {
+		block->color.r = 0x00;
+		block->color.g = 0xFF;
+		block->color.b = 0xff;
+	} else if (board->nextColor == 4) {
+		block->color.r = 0xFF;
+		block->color.g = 0x00;
+		block->color.b = 0xFF;
+	} else {
+		block->color.r = 0xFF;
+		block->color.g = 0xFF;
+		block->color.b = 0xFF;
+	}
+	board->nextColor++;
+	if (board->nextColor == 6)
+		board->nextColor = 0;
+
+	if (board->nextShape == 0) {
+		t_makeBlockL(block);
+	} else if (board->nextShape == 1) {
+		t_makeBlockI(block);
+	} else if (board->nextShape == 2) {
+		t_makeBlockT(block);
+	} else if (board->nextShape == 3) {
+		t_makeBlockZ(block);
+	} else {
+		t_makeBlockZZ(block);
+	}
+	board->nextShape++;
+	if (board->nextShape == 5)
+		board->nextShape = 0;
+
 }
 
 void test(Board * board, Shape * block) {
@@ -782,7 +949,7 @@ void test(Board * board, Shape * block) {
 	}
 
 	if (act == NewBlock) {
-		t_makeBlock(block);
+		t_makeBlock(board, block);
 	}
 
 }
@@ -821,8 +988,8 @@ void start() {
 
 	Board board;
 	Shape block;
-	t_makeBlock(&block);
 	t_clearBoard(&board);
+	t_makeBlock(&board, &block);
 	
 
 	while (1) {
