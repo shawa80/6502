@@ -34,6 +34,9 @@ extern char ORA;
 #define VIA_CA1    ((char)0x02)
 #define VIA_CA2    ((char)0x01)
 
+#define TRUE 1
+#define FALSE 0
+
 
 void sys_irqEnable();
 void sys_irqDisable();
@@ -477,6 +480,13 @@ tetris
 #define t_w 20
 #define t_h 10
 
+
+typedef enum act {
+	NewBlock,
+	Drop
+
+} Action;
+
 typedef struct loc {
 	char x;
 	char y;
@@ -489,8 +499,13 @@ typedef struct shp {
 	Location d;
 } Shape;
 
+typedef struct brd {
+	char grid[10][20];
+} Board;
 
 extern char* t_px[10][20];
+
+
 
 void t_setLum(int x, int y, char brighness) {
 
@@ -644,37 +659,131 @@ void t_clearShape(Shape * block) {
 }
 
 void t_moveDown(Shape * block) {
-	if (block->a.y > 0)
+	//if (block->a.y > 0)
 		block->a.y--;
-	if (block->b.y > 0)
+	//if (block->b.y > 0)
 		block->b.y--;
-	if (block->c.y > 0)
+	//if (block->c.y > 0)
 		block->c.y--;
-	if (block->d.y > 0)
+	//if (block->d.y > 0)
 		block->d.y--;
 }
 
 
-void blockLogic(Shape * block) {
-	t_clearShape(block);
-	t_moveDown(block);
-	t_setShape(block);
+void t_copyBlock(Shape * dest, Shape * src) {
+	dest->a.x = src->a.x;
+	dest->a.y = src->a.y;
+
+	dest->b.x = src->b.x;
+	dest->b.y = src->b.y;
+
+	dest->c.x = src->c.x;
+	dest->c.y = src->c.y;
+
+	dest->d.x = src->d.x;
+	dest->d.y = src->d.y;
 
 }
 
-void test(Shape * block) {
+int t_isCollided(Board * board, Shape * block) {
+	if (block->a.y < 0)
+		return TRUE;
+	if (block->b.y < 0)
+		return TRUE;
+	if (block->c.y < 0)
+		return TRUE;
+	if (block->d.y < 0)
+		return TRUE;
+
+	if (board->grid[block->a.x][block->a.y] == 1)
+		return TRUE;
+	if (board->grid[block->b.x][block->b.y] == 1)
+		return TRUE;
+	if (board->grid[block->c.x][block->c.y] == 1)
+		return TRUE;
+	if (board->grid[block->d.x][block->d.y] == 1)
+		return TRUE;
+
+	return FALSE;
+}
+
+void t_stamp(Board * board, Shape * block) {
+	board->grid[block->a.x][block->a.y] = 1;
+	board->grid[block->b.x][block->b.y] = 1;
+	board->grid[block->c.x][block->c.y] = 1;
+	board->grid[block->d.x][block->d.y] = 1;
+}
 
 
-		if (clk_jiff >= 10) {
-			//t_setPx(9, 0, 0xFF, 0x00, 0x00);
-			blockLogic(block);
-			clk_jiff = 0;
-		}
-		//if (clk_jiff == 0) {
-		//	t_setPx(9, 0, 0x00, 0xFF, 0x00);
-		//}
+Action blockLogic(Board * board, Shape * block) {
 
+	Shape bak;
+	t_copyBlock(&bak, block);
+
+	t_clearShape(block);
+	t_moveDown(block);
+
+	Action act = Drop;
+	if (t_isCollided(board, block)) {
+		t_copyBlock(block, &bak);
+		t_stamp(board, block);
+		act = NewBlock;
+	}
+
+	t_setShape(block);
+
+	return act;
+
+}
+
+void t_clearBoard(Board * board) {
+
+	for (int y = 0; y < 20; y++)
+		board->grid[0][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[1][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[2][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[3][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[4][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[5][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[6][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[7][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[8][y] = 0;
+	for (int y = 0; y < 20; y++)
+		board->grid[9][y] = 0;
+}
+
+
+void t_makeBlock(Shape * block) {
+	block->a.x = 4;
+	block->a.y = 19;
+	block->b.x = 4;
+	block->b.y = 18;
+	block->c.x = 4;
+	block->c.y = 17;
+	block->d.x = 5;
+	block->d.y = 17;
+}
+
+void test(Board * board, Shape * block) {
+
+	Action act = Drop;
+	if (clk_jiff >= 10) {
+		act = blockLogic(board, block);
+		clk_jiff = 0;
 		com_burst();
+	}
+
+	if (act == NewBlock) {
+		t_makeBlock(block);
+	}
 
 }
 
@@ -710,19 +819,14 @@ void start() {
 
 	clk_sec = 0;
 
+	Board board;
 	Shape block;
-	block.a.x = 4;
-	block.a.y = 19;
-	block.b.x = 4;
-	block.b.y = 18;
-	block.c.x = 4;
-	block.c.y = 17;
-	block.d.x = 5;
-	block.d.y = 17;
-
+	t_makeBlock(&block);
+	t_clearBoard(&board);
+	
 
 	while (1) {
-		test(&block);
+		test(&board, &block);
 	}
 }
 
