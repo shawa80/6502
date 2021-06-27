@@ -522,6 +522,10 @@ void t_setLum(int x, int y, char brighness) {
 
 	(*t_px[x][y]) = brighness;
 }
+void t_setLumByMem(char * loc, char brighness) {
+
+	(*loc) = brighness;
+}
 
 void t_setPx(int x, int y, char r, char g, char b) {
 
@@ -619,7 +623,7 @@ void t_clear() {
 
 	char * offset = com_buf_px;
 	for (int i = 0; i < 200; i++) {
-
+		t_setLumByMem(offset, 0xff);
 		t_setPxByMem(offset, 0x00, 0x00, 0x00);
 		offset += 4;
 	}
