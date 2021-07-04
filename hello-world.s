@@ -18,6 +18,27 @@ _IER = $600E
 _ORA = $600F
 
 
+;VIA 2
+_via2_portB = $4000
+_via2_portA = $4001
+_via2_DDRB = $4002
+_via2_DDRA = $4003
+
+_via2_timer1_T1C_L = $4004
+_via2_timer1_T1C_H = $4005
+_via2_timer1_T1L_L = $4006
+_via2_timer1_T1L_H = $4007
+_via2_timer1_T2C_L = $4008
+_via2_timer1_T2C_H = $4009
+
+_via2_SR = $400A
+_via2_ACR = $400B
+_via2_PCR = $400C
+_via2_IFR = $400D
+_via2_IER = $400E
+_via2_ORA = $400F
+
+
 r0  = $00
 r1  = $01
 r2  = $02

@@ -20,6 +20,28 @@ extern char IFR;
 extern char IER;
 extern char ORA;
 
+//via2
+extern char via2_portA;
+extern char via2_portB;
+extern char via2_DDRB;
+extern char via2_DDRA;
+
+extern char via2_timer1_T1C_L;
+extern char via2_timer1_T1C_H;
+extern char via2_timer1_T1L_L;
+extern char via2_timer1_T1L_H;
+
+extern char via2_timer1_T2C_L;
+extern char via2_timer1_T2C_H;
+
+extern char via2_SR;
+extern char via2_ACR;
+extern char via2_PCR;
+extern char via2_IFR;
+extern char via2_IER;
+extern char via2_ORA;
+
+
 #define dis_E 0x80
 #define dis_RW 0x40
 #define dis_RS 0x20
@@ -958,6 +980,53 @@ void test(Board * board, Shape * block) {
 
 }
 
+/**********************************************
+Game pad
+**********************************************/
+
+void gp_init() {
+	via2_DDRA = 0x00; //set to input
+	via2_DDRB = 0x00; //set to input
+	//via2_portB = 0xAA; //set to 
+	//via2_portA = 0xAA; //set to high
+}
+
+void gp_keyAction(Board * board) {
+
+	if (via2_portA & 0x01)
+		t_setPx(1, 1, 0xff, 0xff, 0xff);
+	else
+		t_setPx(1, 1, 0x00, 0x00, 0x00);
+
+	if (via2_portA & 0x02)
+		t_setPx(2, 1, 0xff, 0xff, 0xff);
+	else
+		t_setPx(2, 1, 0x00, 0x00, 0x00);
+
+	if (via2_portA & 0x04)
+		t_setPx(3, 1, 0xff, 0xff, 0xff);
+	else
+		t_setPx(3, 1, 0x00, 0x00, 0x00);
+
+	if (via2_portA & 0x08)
+		t_setPx(4, 1, 0xff, 0xff, 0xff);
+	else
+		t_setPx(4, 1, 0x00, 0x00, 0x00);
+
+}
+
+
+void gp_test(Board * board) {
+
+	if (clk_jiff >= 10) {
+		gp_keyAction(board);
+		clk_jiff = 0;
+		com_burst();
+	}
+
+}
+
+
 void start() {
 
 	clk_init();
@@ -967,6 +1036,7 @@ void start() {
 	com_init();
 
 	t_init();
+	gp_init();
 
 	dis_clear();
 	dis_home();
@@ -993,11 +1063,14 @@ void start() {
 	Board board;
 	Shape block;
 	t_clearBoard(&board);
-	t_makeBlock(&board, &block);
-	
+	//t_makeBlock(&board, &block);
 
+
+	//while (1) {
+	//	test(&board, &block);
+	//}
 	while (1) {
-		test(&board, &block);
+		gp_test(&board);
 	}
 }
 
