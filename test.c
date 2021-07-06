@@ -505,8 +505,8 @@ tetris
 
 typedef enum act {
 	NewBlock,
-	Drop
-
+	Drop,
+	Rotate
 } Action;
 
 typedef struct loc {
@@ -520,7 +520,30 @@ typedef struct clr {
 	char b;
 } Color;
 
+typedef enum shpT {
+
+	L,
+	LL,
+	T,
+	I,
+	Z,
+	ZZ,
+	B
+
+} ShapeType;
+
+typedef enum dir {
+	N,
+	E,
+	S,
+	W
+
+} ShapeDir;
+
 typedef struct shp {
+
+	ShapeType type;
+	ShapeDir dir;
 
 	Color color;
 
@@ -578,6 +601,7 @@ void t_init() {
 	int o = 0;
 	int y;
 
+	//zero out the game board
 	y = 0;
 	while(y < 20) {
 		t_px[0][y] = &com_buf_px[o];
@@ -655,10 +679,10 @@ void t_clear() {
 void t_start() {
 
 	t_clear();
-	t_setPx(0, 0, 0x00, 0x00, 0xFF);
-	t_setPx(9, 0, 0x00, 0x00, 0xFF);
-	t_setPx(9, 19, 0x00, 0x00, 0xFF);
-	t_setPx(0, 19, 0x00, 0x00, 0xFF);
+	//t_setPx(0, 0, 0x00, 0x00, 0xFF);
+	//t_setPx(9, 0, 0x00, 0x00, 0xFF);
+	//t_setPx(9, 19, 0x00, 0x00, 0xFF);
+	//t_setPx(0, 19, 0x00, 0x00, 0xFF);
 }
 
 
@@ -713,6 +737,8 @@ void t_moveRight(Shape * block) {
 	block->c.x++;
 	block->d.x++;
 }
+
+#include "t_shapes.c"
 
 
 void t_copyBlock(Shape * dest, Shape * src) {
@@ -796,7 +822,7 @@ void t_stamp(Board * board, Shape * block) {
 #define t_rightBtn 0x04
 
 
-Action blockLogic(Board * board, Shape * block) {
+Action blockLogic(Action last, Board * board, Shape * block) {
 
 	Shape bak;
 	t_copyBlock(&bak, block);
@@ -804,11 +830,16 @@ Action blockLogic(Board * board, Shape * block) {
 
 	t_clearShape(block);
 
+	//right left logic
 	if (~dis_portA & t_leftBtn) {
 		t_moveLeft(block);
 	}
 	if (~dis_portA & t_rightBtn) {
 		t_moveRight(block);
+	}
+
+	if (~dis_portA & t_centerBtn) {
+		t_rotate(block);
 	}
 
 	if (t_isWallHit(block)
@@ -818,6 +849,14 @@ Action blockLogic(Board * board, Shape * block) {
 		t_copyBlock(&bak, block);	//commit to new rollback location
 	}
 
+
+	if (last == Drop) 
+	{
+		t_setShape(block);
+		return Rotate;
+	}
+
+	//down logic
 	t_moveDown(block);
 
 	Action act = Drop;
@@ -862,58 +901,6 @@ void t_clearBoard(Board * board) {
 		board->grid[9][y] = 0;
 }
 
-void t_makeBlockL(Shape * block) {
-	block->a.x = 4;
-	block->a.y = 19;
-	block->b.x = 4;
-	block->b.y = 18;
-	block->c.x = 4;
-	block->c.y = 17;
-	block->d.x = 5;
-	block->d.y = 17;
-}
-void t_makeBlockT(Shape * block) {
-	block->a.x = 4;
-	block->a.y = 19;
-	block->b.x = 4;
-	block->b.y = 18;
-	block->c.x = 4;
-	block->c.y = 17;
-	block->d.x = 5;
-	block->d.y = 18;
-
-}
-void t_makeBlockI(Shape * block) {
-	block->a.x = 4;
-	block->a.y = 19;
-	block->b.x = 4;
-	block->b.y = 18;
-	block->c.x = 4;
-	block->c.y = 17;
-	block->d.x = 4;
-	block->d.y = 16;
-}
-void t_makeBlockZ(Shape * block) {
-	block->a.x = 4;
-	block->a.y = 19;
-	block->b.x = 5;
-	block->b.y = 19;
-	block->c.x = 5;
-	block->c.y = 18;
-	block->d.x = 6;
-	block->d.y = 18;
-
-}
-void t_makeBlockZZ(Shape * block) {
-	block->a.x = 5;
-	block->a.y = 19;
-	block->b.x = 4;
-	block->b.y = 19;
-	block->c.x = 4;
-	block->c.y = 18;
-	block->d.x = 3;
-	block->d.y = 18;
-}
 
 
 void t_makeBlock(Board * board, Shape * block) {
@@ -948,36 +935,55 @@ void t_makeBlock(Board * board, Shape * block) {
 	if (board->nextColor == 6)
 		board->nextColor = 0;
 
-	if (board->nextShape == 0) {
+	if (board->nextShape == L) {
 		t_makeBlockL(block);
-	} else if (board->nextShape == 1) {
+	} else if (board->nextShape == I) {
 		t_makeBlockI(block);
-	} else if (board->nextShape == 2) {
+	} else if (board->nextShape == T) {
 		t_makeBlockT(block);
-	} else if (board->nextShape == 3) {
+	} else if (board->nextShape == Z) {
 		t_makeBlockZ(block);
-	} else {
+	} else if (board->nextShape == ZZ) {
 		t_makeBlockZZ(block);
+	} else if (board->nextShape == LL) {
+		t_makeBlockLL(block);
+	} else {
+		t_makeBlockB(block);
 	}
 	board->nextShape++;
-	if (board->nextShape == 5)
+	if (board->nextShape > B)
 		board->nextShape = 0;
 
 }
 
-void test(Board * board, Shape * block) {
 
-	Action act = Drop;
+
+Action t_process(Action last, Board * board, Shape * block) {
+
 	if (clk_jiff >= 10) {
-		act = blockLogic(board, block);
+		last = blockLogic(last, board, block);
 		clk_jiff = 0;
 		com_burst();
 	}
 
-	if (act == NewBlock) {
+	if (last == NewBlock) {
 		t_makeBlock(board, block);
 	}
 
+	return last;
+}
+
+void t_main() {
+
+	Board board;
+	Shape block;
+	t_clearBoard(&board);
+	t_makeBlock(&board, &block);
+
+	Action last = Drop;
+	while (1) {
+		last = t_process(last, &board, &block);
+	}
 }
 
 /**********************************************
@@ -1060,18 +1066,10 @@ void start() {
 
 	clk_sec = 0;
 
-	Board board;
-	Shape block;
-	t_clearBoard(&board);
-	//t_makeBlock(&board, &block);
+	t_main();
 
-
-	//while (1) {
-	//	test(&board, &block);
+	//while (1) { gp_test(&board);
 	//}
-	while (1) {
-		gp_test(&board);
-	}
 }
 
 
