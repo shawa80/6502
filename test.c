@@ -131,6 +131,8 @@ void start() {
 
 	t_main();
 
+	//Board board;
+        //t_clearBoard(&board);
 	//while (1) { gp_test(&board);
 	//}
 }

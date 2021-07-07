@@ -310,9 +310,21 @@ void t_stamp(Board * board, Shape * block) {
 	board->grid[block->d.x][block->d.y] = 1;
 }
 
-#define t_leftBtn 0x01
-#define t_centerBtn 0x02
-#define t_rightBtn 0x04
+//#define t_leftBtn 0x01
+//#define t_centerBtn 0x02
+//#define t_rightBtn 0x04
+
+//when select is high
+#define t_cBtn     0x80
+#define t_bBtn     0x20
+#define t_rightBtn 0x10
+#define t_leftBtn  0x08
+#define t_downBtn  0x04
+#define t_upBtn    0x02
+
+//when select is low
+#define t_startBtn 0x80
+#define t_aBtn     0x20
 
 
 Action blockLogic(Action last, Board * board, Shape * block) {
@@ -323,15 +335,23 @@ Action blockLogic(Action last, Board * board, Shape * block) {
 
 	t_clearShape(block);
 
+	via2_portA = 0x40;
+	for (int i = 0; i < 2; i++) {} //nops
+	char plr1H = via2_portA;
+
+	via2_portA = 0x00;
+	for (int i = 0; i < 2; i++) {} //nops
+	char plr1L = via2_portA;
+
 	//right left logic
-	if (~dis_portA & t_leftBtn) {
+	if (~plr1H & t_leftBtn) {
 		t_moveLeft(block);
 	}
-	if (~dis_portA & t_rightBtn) {
+	if (~plr1H & t_rightBtn) {
 		t_moveRight(block);
 	}
 
-	if (~dis_portA & t_centerBtn) {
+	if (~plr1L & t_aBtn) {
 		t_rotate(block);
 	}
 
