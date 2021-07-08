@@ -37,6 +37,19 @@ void led_setPxByMem(char * loc, char r, char g, char b) {
 	(*loc) = r;
 }
 
+void led_cpy(int dx, int dy, int sx, int sy) {
+
+	char* loc = led_px[sx][sy];
+	loc++;
+	char b = (*loc);
+	loc++;
+	char g = (*loc);
+	loc++;
+	char r = (*loc);
+
+	led_setPx(dx, dy, r, g, b);
+}
+
 
 void led_clear() {
 

@@ -351,6 +351,13 @@ void t_setCell(Board * board, int x, int y, int value) {
 	board->grid[x][y] = value;
 }
 
+int t_rowCleared(Board * board, int y) {
+	if (t_getCell(board, 0, y) == 2)
+		return TRUE;
+
+	return FALSE;
+}
+
 int t_rowComplete(Board * board, int y) {
 
 	for (int x = 0; x < 10; x++) {
@@ -361,23 +368,74 @@ int t_rowComplete(Board * board, int y) {
 	return TRUE;
 }
 
-void t_clearRow(Board *board, int row) {
+void t_clearRow(Board *board, int row, int val) {
 
 	for (int x = 0; x < 10; x++) {
-		t_setCell(board, x, row, 0);
+		t_setCell(board, x, row, val);
 		led_setPx(x, row, 0x00, 0x00, 0x00);
+	}
+}
+
+void t_cpyCell(Board  * board, int dx, int dy, int sx, int sy)
+{
+	int c = t_getCell(board, sx, sy);
+	t_setCell(board, dx, dy, c);
+}
+
+
+
+void t_dropRow(Board * board, int row, int src) {
+
+	for (int x = 0; x < 10; x++) {
+		t_cpyCell(board, x, row, x, src);
+	}
+
+	for (int x = 0; x < 10; x++) {
+		led_cpy(x, row, x, src);
 	}
 
 }
+
+void t_dropRows(Board * board, int row) {
+
+	//find next row to copy
+	int src;
+	for (src = row; src < 20; src++) {
+		if (t_getCell(board, 0, src) != 2)
+			break;
+	}
+
+	//copy that row
+	t_dropRow(board, row, src);
+
+	if (src == 19)
+		t_clearRow(board, src, 0);
+	else
+		t_clearRow(board, src, 2);
+}
+
+
 
 void t_completeCheck(Board * board) {
 
 	for (int y = 0; y < 20; y++)
 	{
 		if (t_rowComplete(board, y)) {
-			t_clearRow(board, y);
+			t_clearRow(board, y, 2);
 		}
 	}
+
+	com_burst();
+
+
+	for (int y = 0; y < 19; y++)
+	{
+		if (t_rowCleared(board, y)) {
+			t_dropRows(board, y);
+		}
+	}
+
+
 }
 
 
