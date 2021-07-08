@@ -72,7 +72,7 @@ yes I know this is wrong... I don't have the linker setup yet...
 #include "mem.c"
 #include "timer.c"
 #include "clk.c"
-
+#include "led.c"
 #include "t.c"
 
 /*****************************
@@ -104,7 +104,7 @@ void start() {
 
 	com_init();
 
-	t_init();
+	led_init();
 	gp_init();
 
 	dis_clear();

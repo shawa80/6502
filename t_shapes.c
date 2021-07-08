@@ -89,7 +89,7 @@ void t_makeBlockLLr(Shape * block, ShapeDir dir) {
 	if (dir == E)
 		xy(block, 0, 1, 0, 0, 1, 1, 0, -1);
 	if (dir == S)
-		xy(block, -1, 0, 0, 0, 1, 0, -1, -1);
+		xy(block, -1, 0, 0, 0, 1, 0, 1, -1);
 	if (dir == W)
 		xy(block, 0, 1, 0, 0, 0, -1, -1, -1);
 

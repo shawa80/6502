@@ -2,16 +2,6 @@
 tetris
 ****************************/
 
-/***************************
-20 40
-19 39
-18 38
-.  .
-3  23
-2  22
-1  21
-***************************/
-
 #define t_w 20
 #define t_h 10
 
@@ -72,126 +62,11 @@ typedef struct brd {
 	char grid[10][20];
 } Board;
 
-extern char* t_px[10][20];
 
-
-
-void t_setLum(int x, int y, char brighness) {
-
-	(*t_px[x][y]) = brighness;
-}
-void t_setLumByMem(char * loc, char brighness) {
-
-	(*loc) = brighness;
-}
-
-void t_setPx(int x, int y, char r, char g, char b) {
-
-	char* loc = t_px[x][y];
-	loc++;
-	(*loc) = b;
-	loc++;
-	(*loc) = g;
-	loc++;
-	(*loc) = r;
-
-}
-void t_setPxByMem(char * loc, char r, char g, char b) {
-
-	loc++;
-	(*loc) = b;
-
-	loc++;
-	(*loc) = g;
-
-	loc++;
-	(*loc) = r;
-}
-
-
-void t_init() {
-
-	int o = 0;
-	int y;
-
-	//zero out the game board
-	y = 0;
-	while(y < 20) {
-		t_px[0][y] = &com_buf_px[o];
-		y++;
-		o+=4;
-	}
-	y = 19;
-	while(y >= 0) {
-		t_px[1][y] = &com_buf_px[o];
-		y--;
-		o+=4;
-	}
-	y = 0;
-	while(y < 20) {
-		t_px[2][y] = &com_buf_px[o];
-		y++;
-		o+=4;
-	}
-	y = 19;
-	while(y >= 0) {
-		t_px[3][y] = &com_buf_px[o];
-		y--;
-		o+=4;
-	}
-	y = 0;
-	while(y < 20) {
-		t_px[4][y] = &com_buf_px[o];
-		y++;
-		o+=4;
-	}
-	y = 19;
-	while(y >= 0) {
-		t_px[5][y] = &com_buf_px[o];
-		y--;
-		o+=4;
-	}
-	y = 0;
-	while(y < 20) {
-		t_px[6][y] = &com_buf_px[o];
-		y++;
-		o+=4;
-	}
-	y = 19;
-	while(y >= 0) {
-		t_px[7][y] = &com_buf_px[o];
-		y--;
-		o+=4;
-	}
-	y = 0;
-	while(y < 20) {
-		t_px[8][y] = &com_buf_px[o];
-		y++;
-		o+=4;
-	}
-	y = 19;
-	while(y >= 0) {
-		t_px[9][y] = &com_buf_px[o];
-		y--;
-		o+=4;
-	}
-
-}
-
-void t_clear() {
-
-	char * offset = com_buf_px;
-	for (int i = 0; i < 200; i++) {
-		t_setLumByMem(offset, 0xff);
-		t_setPxByMem(offset, 0x00, 0x00, 0x00);
-		offset += 4;
-	}
-
-}
 
 void t_start() {
 
-	t_clear();
+	led_clear();
 	//t_setPx(0, 0, 0x00, 0x00, 0xFF);
 	//t_setPx(9, 0, 0x00, 0x00, 0xFF);
 	//t_setPx(9, 19, 0x00, 0x00, 0xFF);
@@ -200,16 +75,16 @@ void t_start() {
 
 
 void t_setShape(Shape * block) {
-	t_setPx(block->a.x, block->a.y, block->color.r, block->color.g, block->color.b);
-	t_setPx(block->b.x, block->b.y, block->color.r, block->color.g, block->color.b);
-	t_setPx(block->c.x, block->c.y, block->color.r, block->color.g, block->color.b);
-	t_setPx(block->d.x, block->d.y, block->color.r, block->color.g, block->color.b);
+	led_setPx(block->a.x, block->a.y, block->color.r, block->color.g, block->color.b);
+	led_setPx(block->b.x, block->b.y, block->color.r, block->color.g, block->color.b);
+	led_setPx(block->c.x, block->c.y, block->color.r, block->color.g, block->color.b);
+	led_setPx(block->d.x, block->d.y, block->color.r, block->color.g, block->color.b);
 }
 void t_clearShape(Shape * block) {
-	t_setPx(block->a.x, block->a.y, 0x00, 0x00, 0x00);
-	t_setPx(block->b.x, block->b.y, 0x00, 0x00, 0x00);
-	t_setPx(block->c.x, block->c.y, 0x00, 0x00, 0x00);
-	t_setPx(block->d.x, block->d.y, 0x00, 0x00, 0x00);
+	led_setPx(block->a.x, block->a.y, 0x00, 0x00, 0x00);
+	led_setPx(block->b.x, block->b.y, 0x00, 0x00, 0x00);
+	led_setPx(block->c.x, block->c.y, 0x00, 0x00, 0x00);
+	led_setPx(block->d.x, block->d.y, 0x00, 0x00, 0x00);
 }
 
 void t_moveDown(Shape * block) {
@@ -310,9 +185,6 @@ void t_stamp(Board * board, Shape * block) {
 	board->grid[block->d.x][block->d.y] = 1;
 }
 
-//#define t_leftBtn 0x01
-//#define t_centerBtn 0x02
-//#define t_rightBtn 0x04
 
 //when select is high
 #define t_cBtn     0x80
@@ -363,7 +235,8 @@ Action blockLogic(Action last, Board * board, Shape * block) {
 	}
 
 
-	if (last == Drop) 
+	if (!(~plr1H & t_downBtn)
+		&& last == Drop) //TODO this is ugly
 	{
 		t_setShape(block);
 		return Rotate;
@@ -470,6 +343,43 @@ void t_makeBlock(Board * board, Shape * block) {
 }
 
 
+int t_getCell(Board * board, int x, int y) {
+	return board->grid[x][y];
+}
+
+void t_setCell(Board * board, int x, int y, int value) {
+	board->grid[x][y] = value;
+}
+
+int t_rowComplete(Board * board, int y) {
+
+	for (int x = 0; x < 10; x++) {
+		if (t_getCell(board, x, y) == 0)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+void t_clearRow(Board *board, int row) {
+
+	for (int x = 0; x < 10; x++) {
+		t_setCell(board, x, row, 0);
+		led_setPx(x, row, 0x00, 0x00, 0x00);
+	}
+
+}
+
+void t_completeCheck(Board * board) {
+
+	for (int y = 0; y < 20; y++)
+	{
+		if (t_rowComplete(board, y)) {
+			t_clearRow(board, y);
+		}
+	}
+}
+
 
 Action t_process(Action last, Board * board, Shape * block) {
 
@@ -477,6 +387,10 @@ Action t_process(Action last, Board * board, Shape * block) {
 		last = blockLogic(last, board, block);
 		clk_jiff = 0;
 		com_burst();
+	}
+
+	if (last == NewBlock) {
+		t_completeCheck(board);
 	}
 
 	if (last == NewBlock) {
