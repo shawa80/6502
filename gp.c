@@ -10,6 +10,26 @@ void gp_init() {
 	via2_portA = 0x40; //set to low
 }
 
+char gp_getPl1High() {
+
+	via2_portA = 0x40;
+        for (int i = 0; i < 2; i++) {} //nops
+        char plr1H = via2_portA;
+
+	return plr1H;
+}
+
+char gp_getPl1Low() {
+
+        via2_portA = 0x00;
+        for (int i = 0; i < 2; i++) {} //nops
+        char plr1L = via2_portA;
+
+	return plr1L;
+}
+
+/*
+//T must be defined for this to work
 void gp_keyAction(Board * board) {
 
 	via2_portA = 0x40;
@@ -80,3 +100,4 @@ void gp_test(Board * board) {
 	}
 
 }
+*/

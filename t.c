@@ -9,7 +9,8 @@ tetris
 typedef enum act {
 	NewBlock,
 	Drop,
-	Rotate
+	Rotate,
+	Restart
 } Action;
 
 typedef struct loc {
@@ -60,6 +61,7 @@ typedef struct brd {
 	int nextColor;
 	int nextShape;
 	char grid[10][20];
+	int score;
 } Board;
 
 
@@ -207,13 +209,21 @@ Action blockLogic(Action last, Board * board, Shape * block) {
 
 	t_clearShape(block);
 
-	via2_portA = 0x40;
+	/*via2_portA = 0x40;
 	for (int i = 0; i < 2; i++) {} //nops
 	char plr1H = via2_portA;
 
 	via2_portA = 0x00;
 	for (int i = 0; i < 2; i++) {} //nops
-	char plr1L = via2_portA;
+	char plr1L = via2_portA;*/
+
+	char plr1H = gp_getPl1High();
+	char plr1L = gp_getPl1Low();
+
+
+	if (~plr1L & t_startBtn) {
+		return Restart;
+	}
 
 	//right left logic
 	if (~plr1H & t_leftBtn) {
@@ -262,6 +272,7 @@ Action blockLogic(Action last, Board * board, Shape * block) {
 
 void t_clearBoard(Board * board) {
 
+	board->score = 0;
 	board->nextColor = 0;
 	board->nextShape = 0;
 
@@ -422,6 +433,7 @@ void t_completeCheck(Board * board) {
 	{
 		if (t_rowComplete(board, y)) {
 			t_clearRow(board, y, 2);
+			board->score++;
 		}
 	}
 
@@ -448,6 +460,12 @@ Action t_process(Action last, Board * board, Shape * block) {
 	}
 
 	if (last == NewBlock) {
+		dis_setLine2();
+		dis_print("Score: ");
+		dis_printDec(board->score);
+	}
+
+	if (last == NewBlock) {
 		t_completeCheck(board);
 	}
 
@@ -458,16 +476,24 @@ Action t_process(Action last, Board * board, Shape * block) {
 	return last;
 }
 
+void t_reset(Board * board, Shape * block) {
+	t_clearBoard(board);
+	t_makeBlock(board, block);
+	led_clear();
+}
+
 void t_main() {
 
 	Board board;
 	Shape block;
-	t_clearBoard(&board);
-	t_makeBlock(&board, &block);
+	t_reset(&board, &block);
 
 	Action last = Drop;
 	while (1) {
 		last = t_process(last, &board, &block);
+		if (last == Restart) {
+			t_reset(&board, &block);
+		}
 	}
 }
 

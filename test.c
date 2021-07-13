@@ -73,6 +73,7 @@ yes I know this is wrong... I don't have the linker setup yet...
 #include "timer.c"
 #include "clk.c"
 #include "led.c"
+#include "gp.c"
 #include "t.c"
 
 /*****************************
@@ -93,7 +94,6 @@ inline void irqHandler() {
 
 }
 
-#include "gp.c"
 
 
 void start() {
